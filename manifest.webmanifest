@@ -1,12 +1,12 @@
 {
-  "name": "高二成绩簿",
-  "short_name": "成绩簿",
+  "name": "HIGH SCHOOL JOURNAL",
+  "short_name": "HS JOURNAL",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f2ed",
-  "theme_color": "#f4f2ed",
-  "description": "高二成绩记录与配分调查",
+  "background_color": "#8CC63E",
+  "theme_color": "#8CC63E",
+  "description": "Personal High School Academic Journal",
   "icons": [
     {
       "src": "icons/icon-192.png",
