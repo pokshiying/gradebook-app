@@ -1,0 +1,22 @@
+{
+  "name": "高二成绩簿",
+  "short_name": "成绩簿",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f2ed",
+  "theme_color": "#f4f2ed",
+  "description": "高二成绩记录与配分调查",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

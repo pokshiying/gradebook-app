@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f2ed"><meta name="description" content="高二成绩记录与配分调查">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png">
+<title>高二成绩簿</title>
+<style>
+:root{--bg:#f4f2ed;--paper:#fffefa;--ink:#292b2a;--muted:#777a75;--line:#e8e5dd;--accent:#52685b;--soft:#e9eee8;--red:#a45b50}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Noto Sans SC",sans-serif;padding-bottom:84px}
+header{padding:22px 18px 14px;max-width:760px;margin:auto}header small{color:var(--muted);letter-spacing:.08em}h1{font-size:25px;margin:4px 0;font-weight:750}header p{margin:4px 0;color:var(--muted);font-size:13px}
+main{max-width:760px;margin:auto;padding:0 14px}.page{display:none}.page.active{display:block}.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 3px 14px #3b392b08}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.muted{color:var(--muted);font-size:13px}.big{font-size:30px;font-weight:750;letter-spacing:-1px}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stats .card{margin:0}.btn{border:0;border-radius:12px;padding:11px 14px;background:var(--accent);color:white;font-weight:650;font-size:14px}.btn.secondary{background:var(--soft);color:var(--accent)}.btn.danger{background:#f5e9e6;color:var(--red)}.btn.full{width:100%}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fffefaed;backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:5;padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+nav button{flex:1;max-width:180px;background:none;border:0;color:var(--muted);font-size:12px;padding:5px}nav button b{display:block;font-size:19px;font-weight:500}nav button.on{color:var(--accent);font-weight:750}
+label{display:block;font-size:13px;color:var(--muted);margin:11px 0 5px}input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:11px;background:white;color:var(--ink);font:inherit}textarea{min-height:66px}
+form .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.subject-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.subject{background:white;border:1px solid var(--line);border-radius:12px;padding:11px;text-align:left}.subject strong{display:block}.subject small{color:var(--muted)}
+.record{border-top:1px solid var(--line);padding:12px 0}.record:first-child{border-top:0}.pill{font-size:11px;background:var(--soft);color:var(--accent);padding:3px 8px;border-radius:20px}
+.bar{height:7px;background:#eeece5;border-radius:8px;overflow:hidden;margin-top:7px}.bar i{display:block;height:100%;background:#809786;border-radius:8px}
+.empty{text-align:center;padding:28px 8px;color:var(--muted)}.tiny{font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:#303632;color:white;padding:9px 14px;border-radius:30px;display:none;font-size:13px;z-index:8}
+@media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}.subject-list{grid-template-columns:repeat(3,1fr)}}
+</style></head>
+<body>
+<header><small>YOUR HIGH SCHOOL RECORD</small><h1>高二成绩簿</h1><p>把每一次评估留下来，慢慢看清成绩组成。</p></header>
+<main>
+<section id="home" class="page active">
+ <div class="stats">
+  <div class="card"><div class="muted">累计记录</div><div class="big" id="count">0</div><div class="tiny muted">次评估</div></div>
+  <div class="card"><div class="muted">涉及科目</div><div class="big" id="subjectCount">0</div><div class="tiny muted">／14 科</div></div>
+  <div class="card"><div class="muted">平均得分率</div><div class="big" id="overall">—</div><div class="tiny muted">仅按原始分数统计</div></div>
+  <div class="card"><div class="muted">最近记录</div><div class="big" id="latest">—</div><div class="tiny muted">日期</div></div>
+ </div>
+ <div class="card"><div class="row"><strong>最近的记录</strong><button class="btn secondary" onclick="showPage('records')">查看全部</button></div><div id="recent"></div></div>
+ <div class="card"><strong>记录小提醒</strong><p class="muted">每次填写「获得分数」和「满分」。老师公布了占比时再填写权重；没有公布就留空，避免误判配分。</p></div>
+</section>
+<section id="records" class="page">
+ <div class="row"><h2>成绩记录</h2><button class="btn" onclick="openForm()">＋ 新增记录</button></div>
+ <div class="card"><div class="grid"><div><label>按科目筛选</label><select id="filterSubject" onchange="renderRecords()"><option value="">全部科目</option></select></div><div><label>按类别筛选</label><select id="filterType" onchange="renderRecords()"><option value="">全部类别</option></select></div></div></div>
+ <div class="card" id="recordList"></div>
+</section>
+<section id="subjects" class="page">
+ <h2>科目统计</h2><p class="muted">显示已记录项目的原始得分率，不等于学校正式总成绩。</p>
+ <div class="subject-list" id="subjectStats"></div>
+</section>
+<section id="analysis" class="page">
+ <h2>配分调查</h2>
+ <div class="card"><strong>调查说明</strong><p class="muted">目前先累计各类评估的次数与分数。只有老师公布权重，或取得足够的阶段总成绩与各项分数后，才能可靠推算配分。单靠一次作业和一次测验无法确定占比。</p></div>
+ <div id="typeStats"></div>
+</section>
+<section id="settings" class="page">
+ <h2>数据与设置</h2>
+ <div class="card"><strong>备份资料</strong><p class="muted">资料保存在这台设备的浏览器中。建议定期导出 JSON 备份。</p><div class="actions"><button class="btn" onclick="exportJSON()">导出 JSON 备份</button><button class="btn secondary" onclick="exportCSV()">导出 CSV</button></div><label>导入 JSON 备份</label><input type="file" id="importFile" accept="application/json" onchange="importJSON(event)"></div>
+ <div class="card"><strong>应用安装</strong><p class="muted">请先把网站部署到 HTTPS 网址，再用 Android Chrome 打开，选择「安装应用」或「添加到主屏幕」。</p><button class="btn secondary full" id="installBtn" hidden onclick="installApp()">安装到手机</button><p class="tiny muted" id="installHelp">若未出现安装按钮，可打开 Chrome 右上角菜单查看安装选项。</p></div>
+ <div class="card"><strong>资料管理</strong><button class="btn danger full" onclick="clearAll()">清空本机所有记录</button></div>
+</section>
+<section id="editor" class="page">
+ <div class="row"><h2 id="formTitle">新增记录</h2><button class="btn secondary" onclick="showPage('records')">取消</button></div>
+ <div class="card"><form id="entryForm" onsubmit="saveRecord(event)">
+ <label>科目</label><select id="subject" required></select>
+ <div class="grid"><div><label>评估类别</label><select id="type" required></select></div><div><label>日期</label><input id="date" type="date" required></div></div>
+ <div class="grid"><div><label>获得分数</label><input id="score" type="number" min="0" step="0.01" required placeholder="例如 18"></div><div><label>满分</label><input id="total" type="number" min="0.01" step="0.01" required placeholder="例如 20"></div></div>
+ <label>老师公布的占比（可选，%）</label><input id="weight" type="number" min="0" max="100" step="0.1" placeholder="例如 15">
+ <label>是否计入正式成绩</label><select id="official"><option value="yes">是／确定</option><option value="unknown">不确定</option><option value="no">否／练习</option></select>
+ <label>备注</label><textarea id="note" placeholder="例如：老师说这是平时分、补交、分组报告……"></textarea>
+ <button class="btn full" style="margin-top:16px" type="submit">保存记录</button>
+ </form></div>
+</section>
+</main>
+<nav><button class="on" data-page="home" onclick="showPage('home')"><b>⌂</b>首页</button><button data-page="records" onclick="showPage('records')"><b>▤</b>记录</button><button data-page="subjects" onclick="showPage('subjects')"><b>▦</b>科目</button><button data-page="analysis" onclick="showPage('analysis')"><b>◷</b>配分调查</button><button data-page="settings" onclick="showPage('settings')"><b>⚙</b>设置</button></nav>
+<div id="toast"></div>
+<script>
+const subjects=['华文','马来文','英文','数学','商业','会计','烹调','烘培','餐服','电脑','体育','联科','SPM历史','美术'];
+const types=['作业','测验','考试','报告','笔记','实习','课堂表现','其他'];
+let data=JSON.parse(localStorage.getItem('gradebook_v1')||'[]'), editing=null, deferredPrompt=null;
+const $=id=>document.getElementById(id);
+function persist(){localStorage.setItem('gradebook_v1',JSON.stringify(data));renderAll()}
+function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2100)}
+function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x.dataset.page===id));if(id!=='editor')renderAll();window.scrollTo(0,0)}
+function pct(r){return r.total>0?100*r.score/r.total:0}
+function fmt(n){return Number(n).toFixed(1)+'%'}
+function init(){['subject','filterSubject'].forEach(id=>subjects.forEach(s=>$(id).add(new Option(s,s))));types.forEach(t=>{$('type').add(new Option(t,t));$('filterType').add(new Option(t,t))});$('date').value=new Date().toISOString().slice(0,10);renderAll();if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{})}
+function openForm(id=null){editing=id;let r=data.find(x=>x.id===id);$('formTitle').textContent=r?'编辑记录':'新增记录';$('subject').value=r?.subject||subjects[0];$('type').value=r?.type||types[0];$('date').value=r?.date||new Date().toISOString().slice(0,10);$('score').value=r?.score??'';$('total').value=r?.total??'';$('weight').value=r?.weight??'';$('official').value=r?.official||'yes';$('note').value=r?.note||'';showPage('editor')}
+function saveRecord(e){e.preventDefault();let score=+$('score').value,total=+$('total').value;if(total<=0||score<0||score>total){toast('请检查分数：获得分数不能超过满分');return}let r={id:editing||crypto.randomUUID(),subject:$('subject').value,type:$('type').value,date:$('date').value,score,total,weight:$('weight').value===''?null:+$('weight').value,official:$('official').value,note:$('note').value};if(editing)data=data.map(x=>x.id===editing?r:x);else data.push(r);editing=null;persist();showPage('records');toast('记录已保存')}
+function removeRecord(id){if(confirm('确定删除这条记录？')){data=data.filter(x=>x.id!==id);persist();toast('已删除')}}
+function recordHTML(r){return `<div class="record"><div class="row"><strong>${esc(r.subject)} · ${esc(r.type)}</strong><span class="pill">${fmt(pct(r))}</span></div><div class="row muted"><span>${r.date}　${r.score}/${r.total}</span><span>${r.weight==null?'未公布占比':'占比 '+r.weight+'%'}</span></div>${r.note?`<div class="tiny muted">${esc(r.note)}</div>`:''}<div class="actions"><button class="btn secondary" onclick="openForm('${r.id}')">编辑</button><button class="btn danger" onclick="removeRecord('${r.id}')">删除</button></div></div>`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderRecords(){let list=data.filter(r=>(!$('filterSubject').value||r.subject===$('filterSubject').value)&&(!$('filterType').value||r.type===$('filterType').value)).sort((a,b)=>b.date.localeCompare(a.date));$('recordList').innerHTML=list.length?list.map(recordHTML).join(''):'<div class="empty">还没有符合条件的记录。</div>'}
+function renderAll(){let n=data.length,used=new Set(data.map(x=>x.subject)),sum=data.reduce((a,r)=>a+r.score,0),tot=data.reduce((a,r)=>a+r.total,0);$('count').textContent=n;$('subjectCount').textContent=used.size;$('overall').textContent=tot?fmt(100*sum/tot):'—';$('latest').textContent=data.length?data.slice().sort((a,b)=>b.date.localeCompare(a.date))[0].date.slice(5):'—';let latest=data.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);$('recent').innerHTML=latest.length?latest.map(r=>`<div class="record row"><span><strong>${esc(r.subject)} · ${esc(r.type)}</strong><div class="muted">${r.date}　${r.score}/${r.total}</div></span><b>${fmt(pct(r))}</b></div>`).join(''):'<div class="empty">从第一次作业或测验开始记录吧。</div>';renderRecords();renderSubjects();renderAnalysis()}
+function renderSubjects(){$('subjectStats').innerHTML=subjects.map(s=>{let a=data.filter(r=>r.subject===s&&r.official!=='no'),sc=a.reduce((v,r)=>v+r.score,0),tt=a.reduce((v,r)=>v+r.total,0),p=tt?100*sc/tt:null;return `<div class="subject" onclick="$('filterSubject').value='${s}';showPage('records')"><strong>${s}</strong><small>${a.length} 条正式／待确认记录</small><div class="bar"><i style="width:${p||0}%"></i></div><b>${p==null?'—':fmt(p)}</b></div>`}).join('')}
+function renderAnalysis(){$('typeStats').innerHTML=types.map(t=>{let a=data.filter(r=>r.type===t&&r.official!=='no'),w=a.filter(r=>r.weight!==null);return `<div class="card"><div class="row"><strong>${t}</strong><span class="pill">${a.length} 次</span></div><div class="muted">已公布占比：${w.length? w.map(x=>x.weight+'%').join('、'):'尚无资料'}</div></div>`}).join('')}
+function download(name,content,type){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([content],{type}));a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+function exportJSON(){download('高二成绩备份.json',JSON.stringify(data,null,2),'application/json');toast('备份已导出')}
+function exportCSV(){let rows=[['科目','类别','日期','获得分数','满分','得分率(%)','公布占比(%)','正式成绩','备注'],...data.map(r=>[r.subject,r.type,r.date,r.score,r.total,pct(r).toFixed(2),r.weight??'',r.official,r.note])];let csv='\ufeff'+rows.map(a=>a.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');download('高二成绩记录.csv',csv,'text/csv;charset=utf-8');toast('CSV 已导出')}
+function importJSON(e){let f=e.target.files[0];if(!f)return;let rd=new FileReader();rd.onload=()=>{try{let x=JSON.parse(rd.result);if(!Array.isArray(x))throw 0;if(confirm('导入会覆盖本机现有记录，确定继续？')){data=x;persist();toast('备份导入成功')}}catch{toast('文件格式不正确')}e.target.value=''};rd.readAsText(f)}
+function clearAll(){if(confirm('确定清空所有记录？建议先导出备份。')){data=[];persist();toast('记录已清空')}}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('installBtn').hidden=false});
+async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('installBtn').hidden=true}
+init();
+</script></body></html>
